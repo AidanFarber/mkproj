@@ -1,0 +1,10 @@
+[python]
+venv = "python3 -m venv .venv"
+init = "touch main.py"
+
+[rust]
+init = "cargo init"
+
+[go]
+init = "go mod init"
+
