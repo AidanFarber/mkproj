@@ -1,9 +1,27 @@
 use toml::Table;
-use std::fs;
+use std::{fs, io};
 use std::process::{exit, Command};
+use std::path::PathBuf;
 use std::env;
 
+// --- Global Variables ---
+
 // --- Function Definitions ---
+
+// TODO: Add functionality for this feature
+fn add_new_lang() -> Result<(), io::Error> {
+    Ok(())
+}
+
+fn config_exists(path_to_config: &PathBuf) -> bool {
+    return fs::metadata(path_to_config).is_ok();
+}
+
+fn create_config(path_to_config: &PathBuf) -> std::io::Result<()> {
+    let _ = fs::File::create(path_to_config)?;
+    Ok(())
+}
+
 fn parse_commands(language: &String, com_table: &Table) -> Vec<String> {
     /*
         Function to get the commands from the table, and return only the commands pertaining to that language
@@ -12,18 +30,19 @@ fn parse_commands(language: &String, com_table: &Table) -> Vec<String> {
             - the main language you'd use for the project
 
         com_table : &Table
-            - A parsed (key, value) version of the TOML file that contains the commands to build the env 
+            - A parsed (key, value) version of the TOML file that contains the commands to build the env
 
-        -- Returns -- 
+        -- Returns --
         Vec<String> : Contains the relevant commands to be executed
-    
-     */    
+
+     */
     let sub_table = com_table[language].as_table().unwrap();
     let mut commands: Vec<String> = vec![];
-    for (label, _command) in sub_table { 
+
+    for (label, _command) in sub_table {
         commands.push(com_table[label].to_string());
     }
-    
+
     return commands;
 }
 
@@ -33,11 +52,11 @@ fn execute_commands(name: String, commands: &Vec<String>) {
         -- Parameters --
         name : String
             - Name of the project
-        
+
         commands : &Vec<String>
             - Relevant commands to be executed to build the project
 
-        -- Returns -- 
+        -- Returns --
         None
      */
 
@@ -63,17 +82,22 @@ fn execute_commands(name: String, commands: &Vec<String>) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let default_config: PathBuf = PathBuf::from("~/.config/mkproj/config.toml");
+
+    if !config_exists(&default_config) {
+        create_config(&default_config).unwrap();
+    }
 
     // Handle the errors of the commands ie. No language provided, invalid lang etc.
     // Standard invocation should be: mkproj <name> <language> <arg1> <arg2> ...
 
-    let env_file = fs::read_to_string("./src/envs.toml").unwrap();
+    let env_file = fs::read_to_string(default_config).unwrap();
 
     let supported_langs: Table = env_file.parse().unwrap();
 
     let proj_name: &String = &args[1].to_lowercase();
     let proj_lang: &String = &args[2].to_lowercase();
-    let mut proj_args: Vec<String>;
+    let proj_args: Vec<String>;
     if args.len() > 2 {
         proj_args = args.get(3..).unwrap().to_vec();
     }
@@ -86,5 +110,5 @@ fn main() {
 
     let build_comms: Vec<String> = parse_commands(proj_lang, &supported_langs);
     execute_commands(proj_name.to_string(), &build_comms);
-    println!("Project {} created successfully!", proj_name); 
+    println!("Project {} created successfully!", proj_name);
 }
